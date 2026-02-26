@@ -1,227 +1,175 @@
--- ============================================
--- Add all Active Campaign deal fields as columns
--- This enables filtering by any field
--- ============================================
-
--- Contact info
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS contact_id BIGINT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS contact_email TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS contact_phone TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS contact_first_name TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS contact_last_name TEXT;
-
--- Owner info
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS owner_id BIGINT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS owner_firstname TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS owner_lastname TEXT;
-
--- Deal value
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS value DECIMAL(12,2);
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS currency TEXT;
-
--- Pipeline/Stage IDs
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS pipeline_id INTEGER;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS stage_id INTEGER;
-
--- WW Fields - Noivo(a) info
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS email_noivo2 TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS telefone_noivo2 TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS cpf_principal TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS cpf_noivo2 TEXT;
+-- Migration: Add all Deal fields from ActiveCampaign
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS raw_data JSONB;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS forecasted_close_date TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS motivo_de_perda TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS data_e_hor_rio_do_agendamento_da_1_reuni_o TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS or_amento TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS n_mero_de_convidados INTEGER;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS nome_do_noivo_a_2 TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS e_mail_do_noivo_a_2 TEXT;
 ALTER TABLE deals ADD COLUMN IF NOT EXISTS cidade TEXT;
-
--- WW Fields - Meeting/Reunion
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS tipo_reuniao_closer TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS apresentacao_realizada TEXT;
-
--- WW Fields - Contract/Payment
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS pagamento_taxa TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS enviado_taxa TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS prazo_contrato TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS valor_contrato DECIMAL(12,2);
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS venda_monde TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS pacote_hotel TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS pacote_convidados INTEGER;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS cerimonial_incluso TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS operadora_bloqueio TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS como_foi_feita_a_1_reuni_o BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS data_e_hor_rio_do_agendamento_com_a_closer TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS tipo_da_reuni_o_com_a_closer TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS pagamento_de_taxa DECIMAL(12,2);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS qual_o_nome_do_a_seu_sua_noivo_a BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS quantas_pessoas_v_o_no_seu_casamento BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS quanto_voc_pensa_em_investir BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS onde_voc_quer_casar BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS se_outro_qual BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS dw_ou_elopment BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS grupo_de_whats_criado BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS cpf_contato_principal TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS cpf_noivo_a_2 TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS pacote_contratado_no_hotel_e_forma_de_reserva_pagamento TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS operadora_de_bloqueio TEXT;
 ALTER TABLE deals ADD COLUMN IF NOT EXISTS hospedagem TEXT;
-
--- WW Fields - Wedding details
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS nome_casal TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS previsao_casamento TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS previsao_assessoria TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS site_casamento TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS codigo_casamento TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS data_casamento_definida TIMESTAMPTZ;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS grupo_whats TEXT;
-
--- WW Fields - Form inputs
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS nome_noivo_form TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS convidados_form TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS investimento_form TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS onde_casar TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS outro_destino TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS dw_ou_elopment TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS como_conheceu TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS porque_dw TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS ja_foi_dw TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS tempo_relacionamento TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS costumam_viajar TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS status_relacionamento TEXT;
-
--- WW Fields - Links
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS link_proposeful TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS link_prop_planejamento TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS link_asaas TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS link_reuniao_sdr TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS link_reuniao_closer TEXT;
-
--- WW Fields - Loss reasons
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS motivo_perda_closer TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS motivo_desqualificacao_sdr TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS motivo_oportunidade_futura TEXT;
-
--- WW Fields - Source/Origin
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS origem_conversao TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS fonte_lead TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS influencer TEXT;
-
--- WW Fields - Guest/Convidado
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS mensagem_convidado TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS convidado_venda_monde TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS convidado_ddi TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS convidado_grupo TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS convidado_observacao TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS convidado_tarifa TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS convidado_genero TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS convidado_tipo TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS convidado_situacao TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS convidado_mesa TEXT;
-
--- WW Fields - Planning
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_closer_motivo_de_perda TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS mensagem_do_convidado TEXT;
 ALTER TABLE deals ADD COLUMN IF NOT EXISTS consultora_casal TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS login_site TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS senha_site TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS data_lista_convidados TIMESTAMPTZ;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS envio_save_date TIMESTAMPTZ;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS inicio_atendimento TIMESTAMPTZ;
-
--- WW Fields - Closer extra
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS fez_segunda_reuniao TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS apresentou_orcamento TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS agendamento_degustacao TEXT;
-
--- WT (Welcome Trips) Fields
 ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_destino TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_tempo_viagem TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_tem_destino TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_com_quem TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_tem_destino BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS sdr_wt_motivo_de_perda TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS sdr_wt_destino_informado_pelo_lead TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS sdr_wt_data_contato_futuro TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS vnd_wt_motivo_de_perda TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS vnd_wt_n_da_venda_no_monde TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_link_do_proposeful TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS pacote_ww_n_de_convidados INTEGER;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS valor_fechado_em_contrato DECIMAL(12,2);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS cerimonial_incluso_quantos BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS n_mero_da_venda_monde TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS telefone_noivo_a_2 TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS prazo_para_devolu_o_do_contrato TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS enviado_pagamento_de_taxa DECIMAL(12,2);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS nome_do_casal TEXT;
 ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_mensagem_extra TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_tem_hospedagem TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_o_que_busca TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_investimento_pessoa TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_origem_conversao TEXT;
-
--- WT SDR Fields
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS sdr_wt_motivo_perda TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS sdr_wt_destino TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS sdr_wt_data_contato TIMESTAMPTZ;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS sdr_wt_venda_monde TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS sdr_wt_resumo TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS sdr_wt_influencer TEXT;
-
--- WT VND (Vendas) Fields
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS sdr_wt_venda_monde_taxa DECIMAL(12,2);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_com_quem BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS sdr_wt_resumo_do_neg_cio TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS link_prop_planejamento TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS vnd_wt_origem_do_lead TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS sdr_wt_a_o_influencer TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS motivos_de_qualifica_o_sdr TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS origem_da_ltima_convers_o TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_origem_da_ltima_convers_o TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_convidado_venda_monde TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_closer_data_hora_ganho TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS vnd_wt_qual_valor_da_venda DECIMAL(12,2);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS vnd_wt_qual_a_data_do_embarque TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_fly_ski_quem_vai_embarcar_com_voc BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_fly_ski_qual_seria_o_m_s_ideal_para_a_sua_viagem BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS autom_tico_ww_data_qualifica_o_sdr TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS bww_convidado_ddi TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS bww_convidado_grupo_de_convite TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS bww_convidado_observa_o_do_convite TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS bww_convidado_tarifa_promocional TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS bww_convidado_genero TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS bww_convidado_tipo TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS codigo_do_casamento_deal TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS bww_convidados_situa_o INTEGER;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS bww_convidados_mesa INTEGER;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS apresenta_o_realizada TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS site_do_casamento TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS login TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS senha TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS data_preenchimento_lista_convidados TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS envio_do_save_the_date TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS inicio_atendimento_convidados INTEGER;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS previs_o_data_de_casamento TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS previs_o_contratar_assessoria TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS j_tem_destino_definido BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS autom_tico_or_amento_por_convidado TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS como_conheceu_a_ww BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS motivo_da_escolha_de_um_destination_wedding BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS j_foi_em_algum_destination_wedding BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS status_do_relacionamento TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS costumam_viajar BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS data_e_hor_rio_definidos_para_o_casamento TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS data_final_da_a_o TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS nome_do_casamento TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS local_do_casamento TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS data_confirmada_do_casamento TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS porcentagem_desconto_a_o_inicial DECIMAL(12,2);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS retomar_o_contato_em TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS lead_score_2 DECIMAL(12,2);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_planos TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS telefone TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS vnd_wt_data_retorno_da_viagem TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS data_final_da_a_o_novo TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS qual_a_cidade_do_lead_para_saber_o_aeroporto TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS como_conheceu_a_welcome_trips BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS qual_o_intuito_da_viagem_lazer_lua_de_mel_trabalho_fam_lia TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS a_viagem_tem_algum_motivo_especial BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS j_possui_algum_servi_o_contratado_para_a_viagem_transfer_a_reo BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS destino_s_do_roteiro BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS data_de_embarque TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS quantos_dias_de_viagem BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS quantas_pessoas BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS quantas_crian_as_idade BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS qual_o_or_amento_por_pessoa BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS data_e_hora_da_1a_reuni_o TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS os_dois_participaram_da_reuni_o BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS observa_es TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS tipo_de_hospedagem TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS quantas_reuni_es_foram_feitas BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS quantos_apartamentos_foram_bloqueados INTEGER;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS dados_do_aplicativo TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_convidados_2 INTEGER;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_investimento_2 DECIMAL(12,2);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS data_e_hor_rio_do_agendamento_da_1a_reuni_o_sdr_trips TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS como_foi_feita_a_1a_reuni_o_sdr_trips TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_enviado_pagamento_de_taxa DECIMAL(12,2);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS qualificado_para_sql TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_voc_j_esquiou_alguma_vez BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_investimento_maior_que_20_mil DECIMAL(12,2);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_e_qual_o_principal_motivo_da_sua_viagem BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_como_voc_avalia_o_seu_comportamento_de_consumo_em_rela_o_a_viagens_internacionais BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_qual_o_seu_n_vel_de_experi_ncia_com_esqui_snowboard BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_qual_tipo_de_ambiente_voc_prefere BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_quais_atividades_mais_gostaria_de_fazer_al_m_de_esquiar BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_voc_est_viajando_com_crian_as_se_sim_qual_a_faixa_et_ria BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_importante_que_o_resort_tenha_piscina BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_informa_es_adicionais_clubmed TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_voc_ter_acompanhantes_na_viagem BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_op_o_de_pacote TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_link_do_asaas TEXT;
 ALTER TABLE deals ADD COLUMN IF NOT EXISTS vnd_wt_motivo_perda TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS vnd_wt_venda_monde TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS vnd_wt_valor_venda DECIMAL(12,2);
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS vnd_wt_data_embarque TIMESTAMPTZ;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS vnd_wt_data_retorno TIMESTAMPTZ;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS vnd_wt_origem TEXT;
-
--- WT Fly-Ski Fields
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_flyski_quem TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_flyski_mes TEXT;
-
--- WTN (Welcome Trips Neve) Fields
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_ja_esquiou TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_investimento_20k TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_conhece_clubmed TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_motivo_viagem TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_comportamento_viagem TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_nivel_esqui TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_tipo_ambiente TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_atividades TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_viaja_criancas TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_piscina TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_info_clubmed TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_acompanhantes TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_pacote TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_tempo_viagem TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_o_que_busca TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_conhece_sol TEXT;
-
--- WC (WelConnect) Fields
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_agendamento TIMESTAMPTZ;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_como_feita TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_motivo_perda TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_qualificacao TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_data_ganho TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_tem_hospedagem_contratada TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_o_que_voce_esta_buscando TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_tem_hospedagem_contratada TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_voc_ter_acompanhantes_na_viagem BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wt_investimento_por_pessoa DECIMAL(12,2);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wtn_o_que_voce_esta_buscando TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS noivo_a_1_nome_completo TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS motivo_de_escolher_a_welcome TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS quem_indicou_a_welcome_pra_voc_s BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS dw_escreva_com_suas_palavras_os_motivos_pelos_quais_escolheram_a_welcome TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS destino_dos_sonhos TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS se_influencer_qual BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS follow_extra_eleg_vel TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS fluxo_de_mensagem TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS id_da_mensagem INTEGER;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS quali_frequ_ncia_em_viagem TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS quali_destino TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS quali_compra_em_agencia BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS quali_investimento DECIMAL(12,2);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_fonte_do_lead TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_agendamento_de_reuni_o TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_como_foi_feita_a_reuni_o TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_motivo_de_perda TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_qualifica_o TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_data_e_hora_do_ganho TIMESTAMPTZ;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_disparo_follow_de_compra TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_link_reuni_o_teams_sdr TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_link_reuni_o_teams_closer TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS agendamento_degusta_o TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_como_foi_feita_reuni_o_closer TEXT;
 ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_segmento TEXT;
 ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_instagram TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS wc_disparo_follow TEXT;
-
--- Trip details
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_cidade_lead TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_como_conheceu TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_intuito TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_motivo_especial TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_servico_contratado TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_destinos TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_data_embarque TIMESTAMPTZ;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_dias_viagem INTEGER;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_pessoas INTEGER;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_criancas TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_orcamento_pessoa DECIMAL(12,2);
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_data_hora_reuniao TIMESTAMPTZ;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_dois_participaram TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_observacoes TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_tipo_hospedagem TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_qtd_reunioes INTEGER;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_aptos_bloqueados INTEGER;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS trip_dados_app TEXT;
-
--- Qualification fields
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS quali_frequencia TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS quali_destino TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS quali_compra_agencia TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS quali_investimento TEXT;
-
--- Misc fields
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS lead_score INTEGER;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS data_final_acao TIMESTAMPTZ;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS retomar_contato TIMESTAMPTZ;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS flexibilidade_destino TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS destino_sonhos TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS fluxo_mensagem TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS id_mensagem TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS ultima_mensagem TEXT;
-
--- WW SDR new fields
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_sdr_agendamento TIMESTAMPTZ;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_sdr_como_feita TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_sdr_motivo_perda TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_sdr_qualificacao TEXT;
-
--- WW Closer new fields
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_closer_agendamento TIMESTAMPTZ;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_closer_como_feita TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_closer_motivo_perda TEXT;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_closer_data_ganho TIMESTAMPTZ;
-
--- Indexes for commonly filtered fields
-CREATE INDEX IF NOT EXISTS idx_deals_contact_email ON deals(contact_email);
-CREATE INDEX IF NOT EXISTS idx_deals_owner_id ON deals(owner_id);
-CREATE INDEX IF NOT EXISTS idx_deals_pipeline_id ON deals(pipeline_id);
-CREATE INDEX IF NOT EXISTS idx_deals_stage_id ON deals(stage_id);
-CREATE INDEX IF NOT EXISTS idx_deals_nome_casal ON deals(nome_casal);
-CREATE INDEX IF NOT EXISTS idx_deals_cidade ON deals(cidade);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS pagou_a_taxa DECIMAL(12,2);
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS motivo_desqualifica_o_sdr TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS flexibilidade_de_destino TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS motivo_da_oportunidade_futura TEXT;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_fez_segunda_reuni_o BOOLEAN;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS ww_foi_apresentado_detalhamento_de_or_amento BOOLEAN;

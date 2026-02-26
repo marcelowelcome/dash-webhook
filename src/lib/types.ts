@@ -5,26 +5,13 @@ export const DealSchema = z.object({
   id: z.number(),
   title: z.string().nullable(),
   pipeline: z.string().nullable(),
-  pipeline_id: z.number().nullable(),
   stage: z.string().nullable(),
-  stage_id: z.number().nullable(),
+  group_id: z.string().nullable(),
+  stage_id: z.string().nullable(),
+  owner_id: z.string().nullable(),
   status: z.string().nullable(),
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
-  // Contact info
-  contact_id: z.number().nullable(),
-  contact_email: z.string().nullable(),
-  contact_phone: z.string().nullable(),
-  contact_first_name: z.string().nullable(),
-  contact_last_name: z.string().nullable(),
-  // Owner info
-  owner_id: z.number().nullable(),
-  owner_firstname: z.string().nullable(),
-  owner_lastname: z.string().nullable(),
-  // Deal value
-  value: z.number().nullable(),
-  currency: z.string().nullable(),
-  // WW Core fields
   nome_noivo: z.string().nullable(),
   num_convidados: z.number().nullable(),
   orcamento: z.number().nullable(),
@@ -40,9 +27,9 @@ export const DealSchema = z.object({
   data_fechamento: z.string().nullable(),
   is_elopement: z.boolean().nullable(),
   // Trips fields
-  data_reuniao_trips: z.string().nullable(),
-  como_reuniao_trips: z.string().nullable(),
-  pagou_taxa: z.boolean().nullable(),
+  data_e_hor_rio_do_agendamento_da_1a_reuni_o_sdr_trips: z.string().nullable(),
+  como_foi_feita_a_1a_reuni_o_sdr_trips: z.string().nullable(),
+  pagou_a_taxa: z.boolean().nullable(),
 })
 
 export type Deal = z.infer<typeof DealSchema>

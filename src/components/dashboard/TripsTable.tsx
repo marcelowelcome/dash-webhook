@@ -79,15 +79,15 @@ export function TripsTable({
           isCreatedInMonth(d)
         )
       case 'agendamento':
-        return deals.filter(d => isInMonth(d.data_reuniao_trips, year, month))
+        return deals.filter(d => isInMonth(d.data_e_hor_rio_do_agendamento_da_1a_reuni_o_sdr_trips, year, month))
       case 'reunioes':
         return deals.filter(d =>
-          isInMonth(d.data_reuniao_trips, year, month) &&
-          d.como_reuniao_trips !== null &&
-          d.como_reuniao_trips !== ''
+          isInMonth(d.data_e_hor_rio_do_agendamento_da_1a_reuni_o_sdr_trips, year, month) &&
+          d.como_foi_feita_a_1a_reuni_o_sdr_trips !== null &&
+          d.como_foi_feita_a_1a_reuni_o_sdr_trips !== ''
         )
       case 'taxa':
-        return deals.filter(d => d.pagou_taxa === true)
+        return deals.filter(d => d.pagou_a_taxa === true)
       default:
         return []
     }

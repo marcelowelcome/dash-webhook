@@ -78,8 +78,8 @@ export function DealsModal({ isOpen, onClose, title, deals, stageKey }: DealsMod
       case 'agendamento':
       case 'reunioes':
         return [
-          { header: 'Data Reunião', getValue: (d) => formatDateTime(d.data_reuniao_1 || d.data_reuniao_trips) },
-          { header: 'Como foi', getValue: (d) => d.como_reuniao_1 || d.como_reuniao_trips || '-' },
+          { header: 'Data Reunião', getValue: (d) => formatDateTime(d.data_reuniao_1 || d.data_e_hor_rio_do_agendamento_da_1a_reuni_o_sdr_trips) },
+          { header: 'Como foi', getValue: (d) => d.como_reuniao_1 || d.como_foi_feita_a_1a_reuni_o_sdr_trips || '-' },
         ]
       case 'qualificado':
         return [
@@ -98,8 +98,8 @@ export function DealsModal({ isOpen, onClose, title, deals, stageKey }: DealsMod
         ]
       case 'taxa':
         return [
-          { header: 'Pagou Taxa', getValue: (d) => d.pagou_taxa ? 'Sim' : 'Não' },
-          { header: 'Data Reunião', getValue: (d) => formatDateTime(d.data_reuniao_trips) },
+          { header: 'Pagou Taxa', getValue: (d) => d.pagou_a_taxa ? 'Sim' : 'Não' },
+          { header: 'Data Reunião', getValue: (d) => formatDateTime(d.data_e_hor_rio_do_agendamento_da_1a_reuni_o_sdr_trips) },
         ]
       default:
         return []
@@ -207,7 +207,7 @@ export function DealsModal({ isOpen, onClose, title, deals, stageKey }: DealsMod
                     {deal.created_at
                       ? new Date(deal.created_at).toLocaleDateString('pt-BR')
                       : '-'
-                  }
+                    }
                   </td>
                   {extraColumns.map((col, i) => (
                     <td key={i} className="text-xs" style={{ color: 'var(--gold)' }}>{col.getValue(deal)}</td>
