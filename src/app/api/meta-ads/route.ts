@@ -7,7 +7,6 @@ const META_API_BASE = `https://graph.facebook.com/${META_API_VERSION}`
 const QuerySchema = z.object({
   year: z.coerce.number().min(2020).max(2100),
   month: z.coerce.number().min(1).max(12),
-  pipeline: z.enum(['wedding', 'elopement']).optional().default('wedding'),
 })
 
 interface MetaInsightsResponse {
@@ -34,7 +33,6 @@ export async function GET(request: NextRequest) {
     const parsed = QuerySchema.safeParse({
       year: searchParams.get('year'),
       month: searchParams.get('month'),
-      pipeline: searchParams.get('pipeline'),
     })
 
     if (!parsed.success) {
@@ -44,8 +42,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { year, month, pipeline } = parsed.data
+    const { year, month } = parsed.data
     const accessToken = process.env.META_ADS_ACCESS_TOKEN
+    const accountId = process.env.META_ADS_ACCOUNT_ID
 
     if (!accessToken) {
       return NextResponse.json(
@@ -54,14 +53,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Select account based on pipeline
-    const accountId = pipeline === 'elopement'
-      ? process.env.META_ADS_ACCOUNT_ELOPEMENT
-      : process.env.META_ADS_ACCOUNT_WEDDING
-
     if (!accountId) {
       return NextResponse.json(
-        { error: `Meta Ads account not configured for ${pipeline}` },
+        { error: 'Meta Ads account ID not configured' },
         { status: 500 }
       )
     }
@@ -101,8 +95,7 @@ export async function GET(request: NextRequest) {
         start: startDate,
         end: endDate,
       },
-      accountId,
-      pipeline,
+      source: 'meta_ads',
     })
   } catch (error) {
     console.error('Error fetching Meta Ads data:', error)

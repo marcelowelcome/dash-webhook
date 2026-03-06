@@ -2,6 +2,36 @@ import { supabase } from './supabase'
 import type { Deal, FunnelMetrics, TripsFunnelMetrics, MonthlyTarget, ViewType } from './types'
 import { getMonthDateRange } from './utils'
 
+// ============================================
+// PIPELINE IDs - Active Campaign
+// ============================================
+// Wedding Pipelines (WW):
+//   1  = SDR Weddings
+//   3  = Closer Weddings
+//   4  = Planejamento Weddings
+//   17 = WW - Internacional
+//   31 = Outros Desqualificados | Wedding
+//
+// Elopement Pipeline:
+//   12 = Elopment Wedding
+//
+// Trips Pipelines (WT):
+//   6  = Consultoras TRIPS
+//   8  = SDR - Trips
+//   34 = WTN - Desqualificados
+// ============================================
+
+// Wedding Pipeline IDs (leads count in all, MQL only in 1, 3, 4)
+const WW_PIPELINE_IDS = [1, 3, 4, 17, 31]
+const WW_MQL_PIPELINE_IDS = [1, 3, 4]
+
+// Elopement Pipeline ID
+const ELOPEMENT_PIPELINE_ID = 12
+
+// Trips Pipeline IDs (MQL excludes desqualificados)
+const TRIPS_PIPELINE_IDS = [6, 8, 34]
+const TRIPS_MQL_PIPELINE_IDS = [6, 8]
+
 // Fetch deals for a specific month and view type
 export async function fetchDealsForMonth(
   year: number,
@@ -11,27 +41,41 @@ export async function fetchDealsForMonth(
   const { start, end } = getMonthDateRange(year, month)
 
   if (viewType === 'elopement') {
-    // Elopement: is_elopement = true OR title starts with 'EW'
+    // Elopement: pipeline_id = 12 OR title starts with 'EW'
     const { data, error } = await supabase
       .from('deals')
       .select('*')
       .gte('created_at', start.toISOString())
       .lte('created_at', end.toISOString())
-      .or('is_elopement.eq.true,title.ilike.EW%')
+      .or(`pipeline_id.eq.${ELOPEMENT_PIPELINE_ID},title.ilike.EW%`)
 
     if (error) {
       console.error('Error fetching elopement deals:', error)
       return []
     }
     return data as Deal[]
-  } else {
-    // Wedding: is_elopement = false AND title doesn't start with 'EW'
+  } else if (viewType === 'trips') {
+    // Trips: pipeline_id IN (6, 8, 34)
     const { data, error } = await supabase
       .from('deals')
       .select('*')
       .gte('created_at', start.toISOString())
       .lte('created_at', end.toISOString())
-      .eq('is_elopement', false)
+      .in('pipeline_id', TRIPS_PIPELINE_IDS)
+
+    if (error) {
+      console.error('Error fetching trips deals:', error)
+      return []
+    }
+    return data as Deal[]
+  } else {
+    // Wedding: pipeline_id IN (1, 3, 4, 17, 31) AND title NOT starts with 'EW'
+    const { data, error } = await supabase
+      .from('deals')
+      .select('*')
+      .gte('created_at', start.toISOString())
+      .lte('created_at', end.toISOString())
+      .in('pipeline_id', WW_PIPELINE_IDS)
       .not('title', 'ilike', 'EW%')
 
     if (error) {
@@ -42,19 +86,11 @@ export async function fetchDealsForMonth(
   }
 }
 
-// WW Pipelines
-// Leads Pipelines: 1 (SDR), 3 (Closer), 4 (Planejamento), 17 (Internacional), 31 (Desqualificados)
-const LEADS_PIPELINES = ['SDR Weddings', 'Closer Weddings', 'Planejamento Weddings', 'WW - Internacional', 'Outros Desqualificados | Wedding']
-
-// MQL Pipelines: only 1 (SDR), 3 (Closer), 4 (Planejamento)
-const MQL_PIPELINES = ['SDR Weddings', 'Closer Weddings', 'Planejamento Weddings']
-
-// Trips Pipelines
-// Leads: Pipe 6 (Consultoras), Pipe 8 (SDR), Pipe 34 (Desqualificados)
-const TRIPS_LEADS_PIPELINES = ['Consultoras TRIPS', 'SDR - Trips', 'WTN - Desqualificados']
-
-// MQL: Pipe 6 (Consultoras), Pipe 8 (SDR) - excludes desqualificados
-const TRIPS_MQL_PIPELINES = ['Consultoras TRIPS', 'SDR - Trips']
+// Pipeline names (for backwards compatibility with existing data)
+const WW_PIPELINE_NAMES = ['SDR Weddings', 'Closer Weddings', 'Planejamento Weddings', 'WW - Internacional', 'Outros Desqualificados | Wedding']
+const WW_MQL_PIPELINE_NAMES = ['SDR Weddings', 'Closer Weddings', 'Planejamento Weddings']
+const TRIPS_PIPELINE_NAMES = ['Consultoras TRIPS', 'SDR - Trips', 'WTN - Desqualificados']
+const TRIPS_MQL_PIPELINE_NAMES = ['Consultoras TRIPS', 'SDR - Trips']
 
 // Helper to check if a date falls within a specific month
 function isInMonth(dateStr: string | null, year: number, month: number): boolean {
@@ -63,11 +99,12 @@ function isInMonth(dateStr: string | null, year: number, month: number): boolean
   return date.getFullYear() === year && date.getMonth() + 1 === month
 }
 
-// Helper to check if deal is Elopement (title starts with EW only)
-// DW = Destination Wedding, counts in WW General
-function isElopementTitle(title: string | null): boolean {
-  if (!title) return false
-  return title.startsWith('EW')
+// Helper to check if deal is Elopement
+// Elopement = title starts with EW OR pipeline_id = 12
+function isElopement(deal: Deal): boolean {
+  if (deal.pipeline_id === ELOPEMENT_PIPELINE_ID) return true
+  if (deal.title?.startsWith('EW')) return true
+  return false
 }
 
 // Helper to check if deal was created in a specific month
@@ -77,30 +114,55 @@ function isCreatedInMonth(deal: Deal, year: number, month: number): boolean {
   return date.getFullYear() === year && date.getMonth() + 1 === month
 }
 
+// Helper to check if deal is in WW pipeline
+function isInWwPipeline(deal: Deal): boolean {
+  if (deal.pipeline_id && WW_PIPELINE_IDS.includes(deal.pipeline_id)) return true
+  if (deal.pipeline && WW_PIPELINE_NAMES.includes(deal.pipeline)) return true
+  return false
+}
+
+// Helper to check if deal is in WW MQL pipeline
+function isInWwMqlPipeline(deal: Deal): boolean {
+  if (deal.pipeline_id && WW_MQL_PIPELINE_IDS.includes(deal.pipeline_id)) return true
+  if (deal.pipeline && WW_MQL_PIPELINE_NAMES.includes(deal.pipeline)) return true
+  return false
+}
+
+// Helper to check if deal is in Trips pipeline
+function isInTripsPipeline(deal: Deal): boolean {
+  if (deal.pipeline_id && TRIPS_PIPELINE_IDS.includes(deal.pipeline_id)) return true
+  if (deal.pipeline && TRIPS_PIPELINE_NAMES.includes(deal.pipeline)) return true
+  return false
+}
+
+// Helper to check if deal is in Trips MQL pipeline
+function isInTripsMqlPipeline(deal: Deal): boolean {
+  if (deal.pipeline_id && TRIPS_MQL_PIPELINE_IDS.includes(deal.pipeline_id)) return true
+  if (deal.pipeline && TRIPS_MQL_PIPELINE_NAMES.includes(deal.pipeline)) return true
+  return false
+}
+
 // Calculate funnel metrics from deals
 // WW Funnel: Lead -> MQL -> Agendamento -> Reuniao -> Qualificado -> Closer Agendada -> Closer Realizada -> Venda
 export function calculateFunnelMetrics(deals: Deal[], year: number, month: number): FunnelMetrics {
-  // Leads: pipes 1, 3, 4, 17, 31 + exclude EW titles + CREATED IN MONTH
+  // Leads: pipes 1, 3, 4, 17, 31 + exclude Elopement + CREATED IN MONTH
   const leadsDeals = deals.filter(d =>
-    d.pipeline &&
-    LEADS_PIPELINES.includes(d.pipeline) &&
-    !isElopementTitle(d.title) &&
+    isInWwPipeline(d) &&
+    !isElopement(d) &&
     isCreatedInMonth(d, year, month)
   )
 
-  // MQL: only pipes 1, 3, 4 + exclude EW titles + CREATED IN MONTH
+  // MQL: only pipes 1, 3, 4 + exclude Elopement + CREATED IN MONTH
   const mqlDeals = deals.filter(d =>
-    d.pipeline &&
-    MQL_PIPELINES.includes(d.pipeline) &&
-    !isElopementTitle(d.title) &&
+    isInWwMqlPipeline(d) &&
+    !isElopement(d) &&
     isCreatedInMonth(d, year, month)
   )
 
   // All WW deals (for metrics that can include deals created in other months)
   const allWwDeals = deals.filter(d =>
-    d.pipeline &&
-    LEADS_PIPELINES.includes(d.pipeline) &&
-    !isElopementTitle(d.title)
+    isInWwPipeline(d) &&
+    !isElopement(d)
   )
 
   return {
@@ -161,16 +223,17 @@ export async function fetchClosersForMonth(
   const endYear = month === 12 ? year + 1 : year
   const endDate = `${endYear}-${String(endMonth).padStart(2, '0')}-01`
 
-  if (viewType === 'elopement') {
-    return { count: 0, deals: [] } // Elopement doesn't track closers
+  if (viewType === 'elopement' || viewType === 'trips') {
+    return { count: 0, deals: [] } // Elopement and Trips don't track closers
   }
 
+  // Wedding: NOT (pipeline_id = 12 OR title starts with 'EW')
   const { data, error } = await supabase
     .from('deals')
     .select('*')
     .gte('data_closer', startDate)
     .lt('data_closer', endDate)
-    .eq('is_elopement', false)
+    .not('pipeline_id', 'eq', ELOPEMENT_PIPELINE_ID)
     .not('title', 'ilike', 'EW%')
 
   if (error) {
@@ -192,25 +255,30 @@ export async function fetchVendasForMonth(
   const endDate = `${endYear}-${String(endMonth).padStart(2, '0')}-01`
 
   if (viewType === 'elopement') {
+    // Elopement: pipeline_id = 12 OR title starts with 'EW'
     const { data, error } = await supabase
       .from('deals')
       .select('*')
       .gte('data_fechamento', startDate)
       .lt('data_fechamento', endDate)
-      .or('is_elopement.eq.true,title.ilike.EW%')
+      .or(`pipeline_id.eq.${ELOPEMENT_PIPELINE_ID},title.ilike.EW%`)
 
     if (error) {
       console.error('Error fetching elopement vendas:', error)
       return { count: 0, deals: [] }
     }
     return { count: data?.length || 0, deals: data as Deal[] }
+  } else if (viewType === 'trips') {
+    // Trips doesn't track vendas in the same way
+    return { count: 0, deals: [] }
   } else {
+    // Wedding: NOT (pipeline_id = 12 OR title starts with 'EW')
     const { data, error } = await supabase
       .from('deals')
       .select('*')
       .gte('data_fechamento', startDate)
       .lt('data_fechamento', endDate)
-      .eq('is_elopement', false)
+      .not('pipeline_id', 'eq', ELOPEMENT_PIPELINE_ID)
       .not('title', 'ilike', 'EW%')
 
     if (error) {
@@ -313,18 +381,17 @@ export interface MetaAdsData {
 
 export async function fetchMetaAdsSpend(
   year: number,
-  month: number,
-  pipeline: ViewType
+  month: number
 ): Promise<MetaAdsData> {
   try {
-    // Fetch from cache (updated daily by cron)
+    // Fetch from cache (updated daily by cron) - conta única
     const { data, error } = await supabase
       .from('ads_spend_cache')
       .select('spend, impressions, clicks, cpc, cpm')
       .eq('year', year)
       .eq('month', month)
       .eq('source', 'meta_ads')
-      .eq('pipeline', pipeline)
+      .is('pipeline', null)
       .maybeSingle()
 
     if (error || !data) {
@@ -390,12 +457,13 @@ export async function fetchTripsDealsForMonth(
 ): Promise<Deal[]> {
   const { start, end } = getMonthDateRange(year, month)
 
+  // Use pipeline_id for more reliable filtering
   const { data, error } = await supabase
     .from('deals')
     .select('*')
     .gte('created_at', start.toISOString())
     .lte('created_at', end.toISOString())
-    .in('pipeline', TRIPS_LEADS_PIPELINES)
+    .in('pipeline_id', TRIPS_PIPELINE_IDS)
 
   if (error) {
     console.error('Error fetching trips deals:', error)
@@ -409,22 +477,19 @@ export async function fetchTripsDealsForMonth(
 export function calculateTripsFunnelMetrics(deals: Deal[], year: number, month: number): TripsFunnelMetrics {
   // Leads: pipes 6, 8, 34 + CREATED IN MONTH
   const leadsDeals = deals.filter(d =>
-    d.pipeline &&
-    TRIPS_LEADS_PIPELINES.includes(d.pipeline) &&
+    isInTripsPipeline(d) &&
     isCreatedInMonth(d, year, month)
   )
 
   // MQL: only pipes 6, 8 + CREATED IN MONTH
   const mqlDeals = deals.filter(d =>
-    d.pipeline &&
-    TRIPS_MQL_PIPELINES.includes(d.pipeline) &&
+    isInTripsMqlPipeline(d) &&
     isCreatedInMonth(d, year, month)
   )
 
   // All Trips deals (for metrics that can include deals created in other months)
   const allTripsDeals = deals.filter(d =>
-    d.pipeline &&
-    TRIPS_LEADS_PIPELINES.includes(d.pipeline)
+    isInTripsPipeline(d)
   )
 
   return {
@@ -453,7 +518,7 @@ export async function fetchTaxaForMonth(
   const { data, error } = await supabase
     .from('deals')
     .select('*')
-    .in('pipeline', TRIPS_LEADS_PIPELINES)
+    .in('pipeline_id', TRIPS_PIPELINE_IDS)
     .eq('pagou_taxa', true)
 
   if (error) {

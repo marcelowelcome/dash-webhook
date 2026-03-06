@@ -69,7 +69,7 @@ function WeddingDashboardContent() {
         fetchPreviousMonthMetrics(selectedYear, selectedMonth, 'wedding'),
         fetchVendasForMonth(selectedYear, selectedMonth, 'wedding'),
         fetchClosersForMonth(selectedYear, selectedMonth, 'wedding'),
-        fetchMetaAdsSpend(selectedYear, selectedMonth, 'wedding'),
+        fetchMetaAdsSpend(selectedYear, selectedMonth),
         fetchGoogleAdsSpend(selectedYear, selectedMonth),
       ])
 

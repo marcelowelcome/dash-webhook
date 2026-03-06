@@ -63,7 +63,7 @@ function TripsDashboardContent() {
         fetchTripsMonthlyTarget(selectedYear, selectedMonth),
         fetchPreviousTripsMetrics(selectedYear, selectedMonth),
         fetchTaxaForMonth(selectedYear, selectedMonth),
-        fetchMetaAdsSpend(selectedYear, selectedMonth, 'trips'),
+        fetchMetaAdsSpend(selectedYear, selectedMonth),
         fetchGoogleAdsSpend(selectedYear, selectedMonth),
       ])
 

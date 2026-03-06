@@ -56,13 +56,12 @@ async function getGoogleAccessToken(): Promise<string | null> {
   return data.error ? null : data.access_token
 }
 
-async function fetchMetaAdsData(year: number, month: number, pipeline: 'wedding' | 'elopement') {
+async function fetchMetaAdsData(year: number, month: number) {
   const accessToken = process.env.META_ADS_ACCESS_TOKEN
-  const accountId = pipeline === 'elopement'
-    ? process.env.META_ADS_ACCOUNT_ELOPEMENT
-    : process.env.META_ADS_ACCOUNT_WEDDING
+  const accountId = process.env.META_ADS_ACCOUNT_ID
 
   if (!accessToken || !accountId) {
+    console.log('Meta Ads: Missing credentials')
     return { spend: 0, impressions: 0, clicks: 0, cpc: 0, cpm: 0 }
   }
 
@@ -98,11 +97,13 @@ async function fetchGoogleAdsData(year: number, month: number) {
   const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN
 
   if (!customerId || !developerToken) {
+    console.log('Google Ads: Missing credentials (customerId or developerToken)')
     return { spend: 0, impressions: 0, clicks: 0, cpc: 0, cpm: 0 }
   }
 
   const accessToken = await getGoogleAccessToken()
   if (!accessToken) {
+    console.log('Google Ads: Failed to get access token')
     return { spend: 0, impressions: 0, clicks: 0, cpc: 0, cpm: 0 }
   }
 
@@ -183,26 +184,26 @@ export async function GET(request: NextRequest) {
     const results: Array<{ year: number; month: number; source: string; pipeline: string | null; success: boolean }> = []
 
     for (const { year, month } of monthsToRefresh) {
-      // Meta Ads - Wedding
-      const metaWedding = await fetchMetaAdsData(year, month, 'wedding')
-      const { error: metaWeddingError } = await supabase
+      // Meta Ads (conta única)
+      const metaAds = await fetchMetaAdsData(year, month)
+      const { error: metaError } = await supabase
         .from('ads_spend_cache')
         .upsert({
           year,
           month,
           source: 'meta_ads',
-          pipeline: 'wedding',
-          spend: metaWedding.spend,
-          impressions: metaWedding.impressions,
-          clicks: metaWedding.clicks,
-          cpc: metaWedding.cpc,
-          cpm: metaWedding.cpm,
+          pipeline: null,
+          spend: metaAds.spend,
+          impressions: metaAds.impressions,
+          clicks: metaAds.clicks,
+          cpc: metaAds.cpc,
+          cpm: metaAds.cpm,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'year,month,source,pipeline' })
 
-      results.push({ year, month, source: 'meta_ads', pipeline: 'wedding', success: !metaWeddingError })
+      results.push({ year, month, source: 'meta_ads', pipeline: null, success: !metaError })
 
-      // Google Ads (no pipeline distinction)
+      // Google Ads (conta única)
       const googleAds = await fetchGoogleAdsData(year, month)
       const { error: googleError } = await supabase
         .from('ads_spend_cache')

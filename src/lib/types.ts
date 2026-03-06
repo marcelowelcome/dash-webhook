@@ -5,10 +5,26 @@ export const DealSchema = z.object({
   id: z.number(),
   title: z.string().nullable(),
   pipeline: z.string().nullable(),
+  pipeline_id: z.number().nullable(),
   stage: z.string().nullable(),
+  stage_id: z.number().nullable(),
   status: z.string().nullable(),
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
+  // Contact info
+  contact_id: z.number().nullable(),
+  contact_email: z.string().nullable(),
+  contact_phone: z.string().nullable(),
+  contact_first_name: z.string().nullable(),
+  contact_last_name: z.string().nullable(),
+  // Owner info
+  owner_id: z.number().nullable(),
+  owner_firstname: z.string().nullable(),
+  owner_lastname: z.string().nullable(),
+  // Deal value
+  value: z.number().nullable(),
+  currency: z.string().nullable(),
+  // WW Core fields
   nome_noivo: z.string().nullable(),
   num_convidados: z.number().nullable(),
   orcamento: z.number().nullable(),

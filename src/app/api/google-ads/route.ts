@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
         start: startDate,
         end: endDate,
       },
-      customerId,
+      source: 'google_ads',
     })
   } catch (error) {
     console.error('Error fetching Google Ads data:', error)

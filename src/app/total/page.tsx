@@ -111,7 +111,7 @@ function TotalDashboardContent() {
         fetchVendasForMonth(selectedYear, selectedMonth, 'wedding'),
         fetchVendasForMonth(selectedYear, selectedMonth, 'elopement'),
         fetchClosersForMonth(selectedYear, selectedMonth, 'wedding'),
-        fetchMetaAdsSpend(selectedYear, selectedMonth, 'wedding'),
+        fetchMetaAdsSpend(selectedYear, selectedMonth),
         fetchGoogleAdsSpend(selectedYear, selectedMonth),
       ])
 
