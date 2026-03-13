@@ -3,6 +3,10 @@
     {
       "path": "/api/ads/refresh",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/deals/sync",
+      "schedule": "0 */2 * * *"
     }
   ]
 }
