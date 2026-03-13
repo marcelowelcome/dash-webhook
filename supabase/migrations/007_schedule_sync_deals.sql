@@ -1,0 +1,17 @@
+-- Schedule sync-deals Edge Function every 2 hours via pg_cron + pg_net
+-- Requires pg_cron and pg_net extensions (enabled by default on Supabase)
+-- NOTE: Already applied manually to production. This file is for documentation.
+-- The cron job uses the service_role_key in the Authorization header.
+-- To re-apply: run the SELECT statement below in the Supabase SQL Editor.
+
+-- select cron.schedule(
+--   'sync-deals-every-2h',
+--   '0 */2 * * *',
+--   $$
+--   select net.http_post(
+--     url := 'https://ypzpkdgdbzruagjixwyc.supabase.co/functions/v1/sync-deals',
+--     headers := '{"Authorization": "Bearer <SERVICE_ROLE_KEY>", "Content-Type": "application/json"}'::jsonb,
+--     body := '{}'::jsonb
+--   );
+--   $$
+-- );
