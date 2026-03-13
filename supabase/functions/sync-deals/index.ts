@@ -228,7 +228,6 @@ function buildRecord(
     group_id: PIPELINE_GROUP[pipelineTitle] || deal.group,
     stage_id: deal.stage,
     owner_id: deal.owner,
-    is_elopement: pipelineTitle === 'Elopment Wedding',
     created_at: parseDate(String(deal.cdate || '')),
     updated_at: parseDate(String(deal.mdate || '')),
     raw_data: deal,
@@ -306,13 +305,24 @@ Deno.serve(async (req) => {
   const acHeaders = { 'Api-Token': acKey }
 
   try {
+    // Parse optional parameters from request body
+    let hoursBack = 3
+    let maxPages = 50
+    try {
+      if (req.method === 'POST') {
+        const body = await req.json().catch(() => ({}))
+        if (body.hours_back && typeof body.hours_back === 'number') hoursBack = body.hours_back
+        if (body.max_pages && typeof body.max_pages === 'number') maxPages = body.max_pages
+      }
+    } catch { /* ignore parse errors */ }
+
     const [pipelineMap, stageMap] = await Promise.all([
       loadMap(acUrl, 'dealGroups', 'dealGroups', acHeaders),
       loadMap(acUrl, 'dealStages', 'dealStages', acHeaders),
     ])
 
-    // Sync window: last 3 hours
-    const since = new Date(Date.now() - 3 * 60 * 60 * 1000)
+    // Sync window: configurable (default 3 hours for cron)
+    const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000)
     const sinceISO = since.toISOString().replace('T', ' ').slice(0, 19)
 
     let offset = 0
@@ -355,13 +365,18 @@ Deno.serve(async (req) => {
       }
 
       if (deals.length < limit) break
+      if (pages >= maxPages) {
+        errors.push(`Reached max pages (${maxPages}), stopping. Use max_pages param for more.`)
+        break
+      }
       offset += limit
-      await new Promise(r => setTimeout(r, 200))
+      await new Promise(r => setTimeout(r, 250))
     }
 
     const result = {
       success: true,
       syncedAt: new Date().toISOString(),
+      hoursBack,
       window: `${sinceISO} → now`,
       synced,
       pages,
