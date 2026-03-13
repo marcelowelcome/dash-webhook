@@ -308,11 +308,13 @@ Deno.serve(async (req) => {
     // Parse optional parameters from request body
     let hoursBack = 3
     let maxPages = 50
+    let triggerSource = 'cron'
     try {
       if (req.method === 'POST') {
         const body = await req.json().catch(() => ({}))
         if (body.hours_back && typeof body.hours_back === 'number') hoursBack = body.hours_back
         if (body.max_pages && typeof body.max_pages === 'number') maxPages = body.max_pages
+        if (body.source && typeof body.source === 'string') triggerSource = body.source
       }
     } catch { /* ignore parse errors */ }
 
@@ -372,6 +374,18 @@ Deno.serve(async (req) => {
       offset += limit
       await new Promise(r => setTimeout(r, 250))
     }
+
+    // Log sync execution
+    await supabase.from('sync_logs').insert({
+      finished_at: new Date().toISOString(),
+      hours_back: hoursBack,
+      synced,
+      pages,
+      errors: errors.length > 0 ? errors : null,
+      trigger_source: triggerSource,
+      window_start: sinceISO,
+      window_end: new Date().toISOString().replace('T', ' ').slice(0, 19),
+    })
 
     const result = {
       success: true,
