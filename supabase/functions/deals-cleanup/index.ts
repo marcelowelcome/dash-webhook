@@ -34,50 +34,37 @@ interface DealFields {
   }>
 }
 
-async function fetchDealFromAC(dealId: number): Promise<ACDealResponse | null> {
-  if (!AC_API_URL || !AC_API_KEY) return null
+// Fetches deal WITH custom fields in a single API call (avoids N+1)
+async function fetchDealWithFieldsFromAC(dealId: number): Promise<{ deal: ACDealResponse['deal'] | null; fields: Record<string, string> }> {
+  if (!AC_API_URL || !AC_API_KEY) return { deal: null, fields: {} }
 
   try {
-    const response = await fetch(`${AC_API_URL}/api/3/deals/${dealId}`, {
-      headers: { 'Api-Token': AC_API_KEY },
-    })
+    const response = await fetch(
+      `${AC_API_URL}/api/3/deals/${dealId}?include=dealCustomFieldData`,
+      { headers: { 'Api-Token': AC_API_KEY } },
+    )
 
     if (response.status === 404) {
-      return null // Deal não existe mais
+      return { deal: null, fields: {} } // Deal não existe mais
     }
 
     if (!response.ok) {
       console.error(`AC API error for deal ${dealId}:`, response.status)
-      return { deal: undefined }
+      return { deal: undefined, fields: {} }
     }
 
-    return await response.json()
+    const data = await response.json()
+    const fields: Record<string, string> = {}
+    for (const field of data.dealCustomFieldData || []) {
+      const fId = String(field.customFieldId || field.custom_field_id || '')
+      const fVal = String(field.fieldValue || field.custom_field_text_value || '')
+      if (fId) fields[fId] = fVal
+    }
+
+    return { deal: data.deal, fields }
   } catch (error) {
     console.error(`Error fetching deal ${dealId} from AC:`, error)
-    return { deal: undefined }
-  }
-}
-
-async function fetchDealFieldsFromAC(dealId: number): Promise<Record<string, string>> {
-  if (!AC_API_URL || !AC_API_KEY) return {}
-
-  try {
-    const response = await fetch(`${AC_API_URL}/api/3/deals/${dealId}/dealCustomFieldData`, {
-      headers: { 'Api-Token': AC_API_KEY },
-    })
-
-    if (!response.ok) return {}
-
-    const data: DealFields = await response.json()
-    const fields: Record<string, string> = {}
-
-    for (const field of data.dealCustomFieldData || []) {
-      fields[field.customFieldId] = field.fieldValue || ''
-    }
-
-    return fields
-  } catch {
-    return {}
+    return { deal: undefined, fields: {} }
   }
 }
 
@@ -118,7 +105,8 @@ async function processDeal(
   dealId: number
 ): Promise<{ action: 'deleted' | 'kept' | 'error'; reason?: string }> {
   try {
-    const acDeal = await fetchDealFromAC(dealId)
+    // Single API call fetches deal + custom fields (avoids N+1)
+    const { deal: acDeal, fields } = await fetchDealWithFieldsFromAC(dealId)
 
     // Deal não existe mais no AC → deletar
     if (acDeal === null) {
@@ -130,13 +118,11 @@ async function processDeal(
     }
 
     // Erro ao buscar, pular
-    if (!acDeal?.deal) {
+    if (!acDeal) {
       return { action: 'kept', reason: 'erro na API AC' }
     }
 
-    // Buscar campos customizados
-    const fields = await fetchDealFieldsFromAC(dealId)
-    const { exclude, reason } = shouldExcludeDeal(acDeal.deal.title, fields)
+    const { exclude, reason } = shouldExcludeDeal(acDeal.title, fields)
 
     if (exclude) {
       const { error } = await supabase.from('deals').delete().eq('id', dealId)

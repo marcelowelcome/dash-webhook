@@ -138,6 +138,8 @@ const ORC_MAP: Record<string, number> = {
   "entre r$200 e r$500 mil": 350000, "mais de r$500 mil": 600000,
 }
 
+// SYNC NOTE: Keep in sync with dash-webhook/src/lib/ac-field-map.ts (canonical source).
+// This Edge Function runs in Deno and cannot import from the Next.js project.
 const DESTINO_NORM: Record<string, string> = {
   "nordeste brasileiro": "Nordeste", "caribe/cancún": "Caribe",
   "caribe/cancun": "Caribe", "caribe": "Caribe",
@@ -352,10 +354,19 @@ Deno.serve(async (req) => {
 
       const allFields = (data.dealCustomFieldData || []) as Array<Record<string, unknown>>
 
+      // Build a Map for O(1) field lookup per deal (instead of O(n²) filter)
+      const fieldsByDealId = new Map<string, Array<Record<string, unknown>>>()
+      for (const f of allFields) {
+        const fDealId = String(f.deal_id || f.deal)
+        let arr = fieldsByDealId.get(fDealId)
+        if (!arr) { arr = []; fieldsByDealId.set(fDealId, arr) }
+        arr.push(f)
+      }
+
       const records: Record<string, unknown>[] = []
       for (const deal of deals) {
         const dealId = String(deal.id)
-        const dealFields = allFields.filter((f) => String(f.deal_id || f.deal) === dealId)
+        const dealFields = fieldsByDealId.get(dealId) || []
         records.push(buildRecord(deal, dealFields, pipelineMap, stageMap))
       }
 
@@ -397,12 +408,43 @@ Deno.serve(async (req) => {
       errors: errors.length > 0 ? errors : undefined,
     }
 
+    // Notify Slack on errors (if webhook URL configured)
+    if (errors.length > 0) {
+      const slackUrl = Deno.env.get('SLACK_WEBHOOK_URL')
+      if (slackUrl) {
+        try {
+          await fetch(slackUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: `⚠️ *Sync-deals errors* (${triggerSource})\n• ${synced} deals sincronizados, ${errors.length} erro(s)\n• Window: ${sinceISO} → now\n• Erros: ${errors.slice(0, 3).join('\n• ')}${errors.length > 3 ? `\n• ... +${errors.length - 3} mais` : ''}`,
+            }),
+          })
+        } catch { /* Slack notification is best-effort */ }
+      }
+    }
+
     return new Response(
       JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
     console.error('Sync error:', error)
+
+    // Notify Slack on total failure
+    const slackUrl = Deno.env.get('SLACK_WEBHOOK_URL')
+    if (slackUrl) {
+      try {
+        await fetch(slackUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: `🔴 *Sync-deals FALHOU*\n• Erro: ${String(error).slice(0, 300)}`,
+          }),
+        })
+      } catch { /* best-effort */ }
+    }
+
     return new Response(
       JSON.stringify({ error: 'Sync failed', details: String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

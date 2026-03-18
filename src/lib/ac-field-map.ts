@@ -63,7 +63,7 @@ export const FIELD_MAP: Record<string, string> = {
   "84": "origem_da_ltima_convers_o",
   "85": "wt_origem_da_ltima_convers_o",
   "86": "ww_convidado_venda_monde",
-  "87": "ww_closer_data_hora_ganho",
+  "87": "data_fechamento",
   "91": "vnd_wt_qual_valor_da_venda",
   "92": "vnd_wt_qual_a_data_do_embarque",
   "96": "wt_fly_ski_quem_vai_embarcar_com_voc",

@@ -1,6 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import {
+  CONV_MAP,
+  ORC_MAP,
+  DESTINO_NORM,
+  parseBoolean,
+} from '@/lib/ac-field-map'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,36 +27,74 @@ const WebhookPayloadSchema = z.object({
     cdate: z.string().optional(), // created date
     mdate: z.string().optional(), // modified date
     fields: z.array(z.object({
-      id: z.string(),
+      id: z.string().optional(),
+      key: z.string().optional(),
       value: z.string().nullable(),
     })).optional(),
   }).optional(),
 })
 
-// AC field IDs to DB columns mapping
-const FIELD_MAP: Record<string, string> = {
+// Map AC field KEY (name) to DB column.
+// Field IDs in AC webhook payloads are instance-specific (change per deal),
+// so we match by the stable field key/name instead.
+const FIELD_KEY_MAP: Record<string, string> = {
   // WW fields
-  '6': 'data_reuniao_1',        // Data e horário do agendamento da 1ª reunião
-  '17': 'como_reuniao_1',       // Como foi feita a 1ª reunião?
-  '18': 'data_closer',          // Data e horário do agendamento com a Closer
-  '83': 'motivos_qualificacao_sdr', // Motivos de qualificação SDR
-  '87': 'data_fechamento',      // [WW] [Closer] Data-Hora Ganho
-  '93': 'data_qualificado',     // Automático - WW - Data Qualificação SDR
-  '169': 'qualificado_sql',     // Qualificado para SQL
-  '299': 'reuniao_closer',      // WW | Como foi feita Reunião Closer
+  'Data e horário do agendamento da 1ª reunião': 'data_reuniao_1',
+  'Como foi feita a 1ª reunião?': 'como_reuniao_1',
+  'Data e horário do agendamento com a Closer:': 'data_closer',
+  'Data e horário do agendamento com a Closer': 'data_closer',
+  'Motivos de qualificação SDR': 'motivos_qualificacao_sdr',
+  '[WW] [Closer] Data-Hora Ganho': 'data_fechamento',
+  ' [WW] [Closer] Data-Hora Ganho': 'data_fechamento', // leading space variant
+  'Automático - WW - Data Qualificação SDR': 'data_qualificado',
+  'Qualificado para SQL': 'qualificado_sql',
+  'WW | Como foi feita Reunião Closer': 'reuniao_closer',
   // Trips fields
-  '166': 'data_reuniao_trips',  // Data e horário do agendamento da 1a. Reunião SDR TRIPS
-  '167': 'como_reuniao_trips',  // Como foi feita a 1a. Reunião SDR TRIPS
-  '302': 'pagou_taxa',          // Pagou a taxa?
+  'Data e horário do agendamento da 1a. Reunião SDR TRIPS': 'data_reuniao_trips',
+  'Como foi feita a 1a. Reunião SDR TRIPS': 'como_reuniao_trips',
+  'Pagou a taxa?': 'pagou_taxa',
+  'Pagamento de Taxa?': 'pagou_taxa',
 }
 
-// Additional deal fields
+// Additional deal fields mapped by key name
 const DEAL_FIELD_MAP: Record<string, string> = {
   'Nome do Noivo(a)2': 'nome_noivo',
   'Número de convidados:': 'num_convidados',
   'Orçamento:': 'orcamento',
   'Destino': 'destino',
   'Motivo de perda': 'motivo_perda',
+  'Valor fechado em contrato:': 'valor_fechado_em_contrato',
+  'WW | Fonte do lead': 'ww_fonte_do_lead',
+  'Cidade:': 'cidade',
+  'Tempo de relacionamento': 'status_do_relacionamento',
+}
+
+const PIPELINE_GROUP: Record<string, string> = {
+  "SDR Weddings": "1",
+  "Closer Weddings": "3",
+  "Planejamento Weddings": "4",
+  "Convidados": "5",
+  "Consultoras TRIPS": "6",
+  "SDR - Trips": "8",
+  "Convidados - Marcella": "9",
+  "Convidados - Michelly": "10",
+  "Convidados - Mariana Rosales": "11",
+  "Elopment Wedding": "12",
+  "Presentes Weddings": "14",
+  "WT - Weex Pass": "16",
+  "WW - Internacional": "17",
+  "WW - Gestão Casamento ": "18",
+  "WW - Gestão Convidados": "19",
+  "Extras Viagem": "20",
+  "WW - Atendimento ao Convidado": "21",
+  "Produção": "22",
+  "Controle de Qualidade": "23",
+  "Concierge (+50k)": "24",
+  "Coordenação Pós Venda (-50k)": "25",
+  "WT - Expedição NYC - FerStall": "30",
+  "Outros Desqualificados | Wedding": "31",
+  "WTN - Desqualificados": "34",
+  "WelConnect": "37",
 }
 
 function parseDate(value: string | null): string | null {
@@ -74,12 +118,6 @@ function parseDate(value: string | null): string | null {
   } catch {
     return null
   }
-}
-
-function parseBoolean(value: string | null): boolean {
-  if (!value) return false
-  const lower = String(value).toLowerCase().trim()
-  return lower === 'yes' || lower === 'sim' || lower === 'true' || lower === '1'
 }
 
 export async function POST(request: NextRequest) {
@@ -131,13 +169,22 @@ export async function POST(request: NextRequest) {
         updated_at: deal.mdate ? parseDate(deal.mdate) : null,
       }
 
-      // Compute is_elopement
+      // Compute is_elopement and group_id
       record.is_elopement = deal.pipeline === 'Elopment Wedding'
+      if (deal.pipeline) {
+        const gid = PIPELINE_GROUP[deal.pipeline]
+        if (gid) record.group_id = gid
+      }
 
-      // Map custom fields
+      // Map custom fields by key name (field IDs are instance-specific, not stable)
+      const fieldByKey: Record<string, string> = {}
       if (deal.fields) {
         for (const field of deal.fields) {
-          const dbColumn = FIELD_MAP[field.id]
+          const key = (field.key || '').trim()
+          if (key && field.value) fieldByKey[key] = field.value.trim()
+
+          // Map by key name to DB column
+          const dbColumn = key ? FIELD_KEY_MAP[key] : undefined
           if (!dbColumn) continue
 
           switch (dbColumn) {
@@ -155,8 +202,76 @@ export async function POST(request: NextRequest) {
             default:
               record[dbColumn] = field.value || null
           }
+
+          // Also map DEAL_FIELD_MAP entries
+          const dealCol = DEAL_FIELD_MAP[key]
+          if (dealCol && field.value) {
+            switch (dealCol) {
+              case 'num_convidados': {
+                // Try CONV_MAP first (text range), then parse as number
+                const v = CONV_MAP[field.value.toLowerCase().trim()]
+                if (v !== undefined) {
+                  record.num_convidados = v
+                } else {
+                  const n = parseFloat(field.value.replace(/[^\d]/g, ''))
+                  if (!isNaN(n)) record.num_convidados = n
+                }
+                break
+              }
+              case 'orcamento': {
+                const v = ORC_MAP[field.value.toLowerCase().trim()]
+                if (v !== undefined) {
+                  record.orcamento = v
+                } else {
+                  const n = parseFloat(field.value.replace(/[^\d]/g, ''))
+                  if (!isNaN(n)) record.orcamento = n
+                }
+                break
+              }
+              case 'valor_fechado_em_contrato': {
+                const n = parseFloat(field.value.replace(/[^\d]/g, ''))
+                if (!isNaN(n)) record.valor_fechado_em_contrato = n
+                break
+              }
+              case 'destino': {
+                if (field.value === 'Outro') {
+                  record.destino = fieldByKey['Outro destino'] || fieldByKey['Outro'] || 'Outro'
+                } else {
+                  record.destino = DESTINO_NORM[field.value.toLowerCase().trim()] ?? field.value.trim()
+                }
+                break
+              }
+              default:
+                record[dealCol] = field.value
+            }
+          }
         }
       }
+
+      // Fallback: formulário do lead by key name (Onde quer casar, Quantas pessoas, Quanto investir)
+      const rawDestino = fieldByKey['Onde você quer casar?*'] || fieldByKey['Onde você quer casar?']
+      if (rawDestino && !record.destino) {
+        if (rawDestino === 'Outro') {
+          record.destino = fieldByKey['Outro destino:'] || fieldByKey['Se marcou "Outro", qual destino?'] || 'Outro'
+        } else {
+          record.destino = DESTINO_NORM[rawDestino.toLowerCase().trim()] ?? rawDestino
+        }
+      }
+
+      const rawConv = fieldByKey['Quantas pessoas vão no seu casamento?'] || fieldByKey['Quantos convidados?']
+      if (rawConv && !record.num_convidados) {
+        const v = CONV_MAP[rawConv.toLowerCase().trim()]
+        if (v !== undefined) record.num_convidados = v
+      }
+
+      const rawOrc = fieldByKey['Quanto você pensa em investir?*'] || fieldByKey['Quanto você pensa em investir?']
+      if (rawOrc && !record.orcamento) {
+        const v = ORC_MAP[rawOrc.toLowerCase().trim()]
+        if (v !== undefined) record.orcamento = v
+      }
+
+      // Save raw payload for debugging
+      record.raw_data = body
 
       // Upsert to database
       const { error } = await supabase
