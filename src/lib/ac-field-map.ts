@@ -196,7 +196,7 @@ export const NUM_COLS = new Set([
 
 export const DATE_COLS = new Set([
   'created_at', 'updated_at', 'forecasted_close_date', 'data_e_hor_rio_do_agendamento_da_1_reuni_o',
-  'data_e_hor_rio_do_agendamento_com_a_closer', 'sdr_wt_data_contato_futuro', 'ww_closer_data_hora_ganho',
+  'data_e_hor_rio_do_agendamento_com_a_closer', 'sdr_wt_data_contato_futuro',
   'vnd_wt_qual_a_data_do_embarque', 'autom_tico_ww_data_qualifica_o_sdr', 'data_preenchimento_lista_convidados',
   'envio_do_save_the_date', 'previs_o_data_de_casamento', 'data_e_hor_rio_definidos_para_o_casamento',
   'data_final_da_a_o', 'data_confirmada_do_casamento', 'vnd_wt_data_retorno_da_viagem', 'data_final_da_a_o_novo',

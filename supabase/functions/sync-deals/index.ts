@@ -410,7 +410,7 @@ Deno.serve(async (req) => {
 
     // Notify Slack on errors (if webhook URL configured)
     if (errors.length > 0) {
-      const slackUrl = Deno.env.get('SLACK_WEBHOOK_URL')
+      const slackUrl = Deno.env.get('SLACK_WEBHOOK_URL')?.trim()
       if (slackUrl) {
         try {
           await fetch(slackUrl, {
@@ -432,7 +432,7 @@ Deno.serve(async (req) => {
     console.error('Sync error:', error)
 
     // Notify Slack on total failure
-    const slackUrl = Deno.env.get('SLACK_WEBHOOK_URL')
+    const slackUrl = Deno.env.get('SLACK_WEBHOOK_URL')?.trim()
     if (slackUrl) {
       try {
         await fetch(slackUrl, {

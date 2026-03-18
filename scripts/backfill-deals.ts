@@ -65,7 +65,7 @@ const FIELD_MAP: Record<string, string> = {
     "84": "origem_da_ltima_convers_o",
     "85": "wt_origem_da_ltima_convers_o",
     "86": "ww_convidado_venda_monde",
-    "87": "ww_closer_data_hora_ganho",
+    "87": "data_fechamento",
     "91": "vnd_wt_qual_valor_da_venda",
     "92": "vnd_wt_qual_a_data_do_embarque",
     "96": "wt_fly_ski_quem_vai_embarcar_com_voc",
@@ -198,7 +198,7 @@ const NUM_COLS = [
 
 const DATE_COLS = [
     'created_at', 'updated_at', 'forecasted_close_date', 'data_e_hor_rio_do_agendamento_da_1_reuni_o',
-    'data_e_hor_rio_do_agendamento_com_a_closer', 'sdr_wt_data_contato_futuro', 'ww_closer_data_hora_ganho',
+    'data_e_hor_rio_do_agendamento_com_a_closer', 'sdr_wt_data_contato_futuro', 'data_fechamento',
     'vnd_wt_qual_a_data_do_embarque', 'autom_tico_ww_data_qualifica_o_sdr', 'data_preenchimento_lista_convidados',
     'envio_do_save_the_date', 'previs_o_data_de_casamento', 'data_e_hor_rio_definidos_para_o_casamento',
     'data_final_da_a_o', 'data_confirmada_do_casamento', 'vnd_wt_data_retorno_da_viagem', 'data_final_da_a_o_novo',
@@ -227,6 +227,31 @@ const BOOL_COLS = [
     'is_elopement', 'qualificado_sql'
 ]
 
+
+const CONV_MAP: Record<string, number> = {
+    "apenas o casal": 2, "até 20 convidados": 15,
+    "menos de 50 pessoas": 35, "entre 20 a 50 convidados": 35,
+    "entre 50 a 80 convidados": 65, "entre 50 e 100 pessoas": 75,
+    "entre 80 a 100 convidados": 90,
+    "acima de 100 convidados": 120, "mais de 100 pessoas": 120,
+}
+
+const ORC_MAP: Record<string, number> = {
+    "até r$50 mil": 40000, "menos de r$50 mil": 40000,
+    "entre r$50 e r$80 mil": 65000, "entre r$50 e r$100 mil": 75000,
+    "entre r$80 e r$100 mil": 90000, "entre r$100 e r$200 mil": 150000,
+    "entre r$200 e r$500 mil": 350000, "mais de r$500 mil": 600000,
+}
+
+const DESTINO_NORM: Record<string, string> = {
+    "nordeste brasileiro": "Nordeste", "caribe/cancún": "Caribe",
+    "caribe/cancun": "Caribe", "caribe": "Caribe",
+    "itália": "Itália", "italia": "Itália",
+    "portugal": "Portugal", "mendoza": "Mendoza",
+    "maldivas": "Maldivas", "europa": "Europa",
+    "grécia": "Grécia", "bali": "Bali",
+    "patagônia": "Patagônia", "patagonia": "Patagônia",
+}
 
 const STATUS_MAP: Record<string, string> = {
     '0': 'Won',
@@ -436,9 +461,9 @@ async function backfillRobust() {
 
             // Sideloaded fields
             const dealFields = (data.dealCustomFieldData || []).filter((f: any) => f.deal === dealId)
+            const rawById: Record<string, string> = {}
             for (const field of dealFields) {
                 const col = FIELD_MAP[field.custom_field_id]
-                if (!col) continue
 
                 // Coalesce value from sideloaded fields
                 const val = field.custom_field_text_value ||
@@ -447,6 +472,9 @@ async function backfillRobust() {
                     field.custom_field_number_value ||
                     field.custom_field_currency_value || null
 
+                if (val !== null && val !== '') rawById[field.custom_field_id] = String(val).trim()
+
+                if (!col) continue
                 if (val === null || val === '') continue
 
                 if (DATE_COLS.includes(col)) {
@@ -459,6 +487,32 @@ async function backfillRobust() {
                     record[col] = parseBoolean(val)
                 } else {
                     record[col] = val
+                }
+            }
+
+            // Fallback: campos 26/27/28 para destino/num_convidados/orcamento
+            if (!record.destino) {
+                const raw28 = rawById['28']
+                if (raw28) {
+                    if (raw28 === 'Outro') {
+                        record.destino = rawById['29'] || 'Outro'
+                    } else {
+                        record.destino = DESTINO_NORM[raw28.toLowerCase()] ?? raw28
+                    }
+                }
+            }
+            if (!record.num_convidados) {
+                const raw26 = rawById['26']
+                if (raw26) {
+                    const v = CONV_MAP[raw26.toLowerCase()]
+                    if (v !== undefined) record.num_convidados = v
+                }
+            }
+            if (!record.orcamento) {
+                const raw27 = rawById['27']
+                if (raw27) {
+                    const v = ORC_MAP[raw27.toLowerCase()]
+                    if (v !== undefined) record.orcamento = v
                 }
             }
 

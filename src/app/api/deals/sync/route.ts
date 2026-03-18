@@ -149,11 +149,16 @@ function buildRecord(
 }
 
 export async function GET(request: NextRequest) {
-  // Auth: require CRON_SECRET when configured
+  // Auth: accept CRON_SECRET via Bearer token OR Vercel's built-in cron header
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (cronSecret) {
+    const isBearer = authHeader === `Bearer ${cronSecret}`
+    // Vercel cron sends no auth header but is trusted (internal routing)
+    const isVercelCron = request.headers.get('x-vercel-cron') !== null
+    if (!isBearer && !isVercelCron) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
   }
 
   if (!AC_API_URL || !AC_API_KEY) {
