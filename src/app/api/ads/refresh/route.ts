@@ -160,12 +160,15 @@ async function fetchGoogleAdsData(year: number, month: number) {
 }
 
 export async function GET(request: NextRequest) {
-  // Verify authorization (Vercel Cron sends this header)
+  // Auth: require CRON_SECRET via Bearer token OR Vercel's built-in cron header
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
-
-  // Allow Vercel Cron or manual call with secret
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'Server misconfigured: CRON_SECRET missing' }, { status: 500 })
+  }
+  const isBearer = authHeader === `Bearer ${cronSecret}`
+  const isVercelCron = request.headers.get('x-vercel-cron') !== null
+  if (!isBearer && !isVercelCron) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -181,10 +184,15 @@ export async function GET(request: NextRequest) {
       { year: currentMonth === 1 ? currentYear - 1 : currentYear, month: currentMonth === 1 ? 12 : currentMonth - 1 },
     ]
 
-    const results: Array<{ year: number; month: number; source: string; pipeline: string | null; success: boolean }> = []
+    // Single Meta + Google account aggregates all pipelines today.
+    // Tag rows with 'wedding' (the only pipeline that runs paid acquisition
+    // through these accounts). If WW splits accounts per line of product,
+    // loop here and write one row per pipeline.
+    const ANCHOR_PIPELINE = 'wedding'
+
+    const results: Array<{ year: number; month: number; source: string; pipeline: string; success: boolean }> = []
 
     for (const { year, month } of monthsToRefresh) {
-      // Meta Ads (conta única)
       const metaAds = await fetchMetaAdsData(year, month)
       const { error: metaError } = await supabase
         .from('ads_spend_cache')
@@ -192,7 +200,7 @@ export async function GET(request: NextRequest) {
           year,
           month,
           source: 'meta_ads',
-          pipeline: null,
+          pipeline: ANCHOR_PIPELINE,
           spend: metaAds.spend,
           impressions: metaAds.impressions,
           clicks: metaAds.clicks,
@@ -201,9 +209,8 @@ export async function GET(request: NextRequest) {
           updated_at: new Date().toISOString(),
         }, { onConflict: 'year,month,source,pipeline' })
 
-      results.push({ year, month, source: 'meta_ads', pipeline: null, success: !metaError })
+      results.push({ year, month, source: 'meta_ads', pipeline: ANCHOR_PIPELINE, success: !metaError })
 
-      // Google Ads (conta única)
       const googleAds = await fetchGoogleAdsData(year, month)
       const { error: googleError } = await supabase
         .from('ads_spend_cache')
@@ -211,7 +218,7 @@ export async function GET(request: NextRequest) {
           year,
           month,
           source: 'google_ads',
-          pipeline: null,
+          pipeline: ANCHOR_PIPELINE,
           spend: googleAds.spend,
           impressions: googleAds.impressions,
           clicks: googleAds.clicks,
@@ -220,7 +227,7 @@ export async function GET(request: NextRequest) {
           updated_at: new Date().toISOString(),
         }, { onConflict: 'year,month,source,pipeline' })
 
-      results.push({ year, month, source: 'google_ads', pipeline: null, success: !googleError })
+      results.push({ year, month, source: 'google_ads', pipeline: ANCHOR_PIPELINE, success: !googleError })
     }
 
     return NextResponse.json({

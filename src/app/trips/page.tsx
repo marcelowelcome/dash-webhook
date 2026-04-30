@@ -63,8 +63,8 @@ function TripsDashboardContent() {
         fetchTripsMonthlyTarget(selectedYear, selectedMonth),
         fetchPreviousTripsMetrics(selectedYear, selectedMonth),
         fetchTaxaForMonth(selectedYear, selectedMonth),
-        fetchMetaAdsSpend(selectedYear, selectedMonth),
-        fetchGoogleAdsSpend(selectedYear, selectedMonth),
+        fetchMetaAdsSpend(selectedYear, selectedMonth, 'trips'),
+        fetchGoogleAdsSpend(selectedYear, selectedMonth, 'trips'),
       ])
 
       // Combine deals: created_at deals + taxa deals (deduplicated)

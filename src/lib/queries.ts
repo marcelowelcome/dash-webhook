@@ -348,7 +348,8 @@ export async function fetchMetaAdsSpend(
 // Google Ads spend data (same interface as Meta)
 export async function fetchGoogleAdsSpend(
   year: number,
-  month: number
+  month: number,
+  pipeline: ViewType
 ): Promise<MetaAdsData> {
   try {
     // Fetch from cache (updated daily by cron)
@@ -358,7 +359,7 @@ export async function fetchGoogleAdsSpend(
       .eq('year', year)
       .eq('month', month)
       .eq('source', 'google_ads')
-      .is('pipeline', null)
+      .eq('pipeline', pipeline)
       .maybeSingle()
 
     if (error || !data) {

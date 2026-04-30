@@ -69,8 +69,8 @@ function WeddingDashboardContent() {
         fetchPreviousMonthMetrics(selectedYear, selectedMonth, 'wedding'),
         fetchVendasForMonth(selectedYear, selectedMonth, 'wedding'),
         fetchClosersForMonth(selectedYear, selectedMonth, 'wedding'),
-        fetchMetaAdsSpend(selectedYear, selectedMonth),
-        fetchGoogleAdsSpend(selectedYear, selectedMonth),
+        fetchMetaAdsSpend(selectedYear, selectedMonth, 'wedding'),
+        fetchGoogleAdsSpend(selectedYear, selectedMonth, 'wedding'),
       ])
 
       // Combine deals: created_at deals + vendas deals + closer deals (deduplicated)
